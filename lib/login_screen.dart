@@ -5,7 +5,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 import 'package:tfg/api_connection/api_connection.dart';
 import 'package:tfg/home_screen.dart';
-import 'package:tfg/signup_screen.dart';
 import 'package:http/http.dart' as http;
 
 // ignore: use_key_in_widget_constructors
@@ -51,7 +50,7 @@ class _LoginScreenState extends State<LoginScreen> {
       await storage.write(key: 'auth_token', value:  jsonResponse['token']);
       await storage.write(key: 'client_id', value: jsonResponse['client_id']);
       // Get to the next screen
-      Get.to(HomeScreen());
+      Get.offAll(HomeScreen());
     } else {
       // If the request was not successful, throw an exception or handle the error accordingly
       throw Exception('Error: ${response.body}');
@@ -245,26 +244,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ],
                               ),
                             ),
-                          
-                            const SizedBox(height: 16.0,),
 
-                            //register button + text
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Text(
-                                  "¿No tiene una cuenta?",
-                                ),
-                                TextButton(
-                                  onPressed: () {
-                                    Get.to(SignUpScreen());
-                                  },
-                                  child: const Text(
-                                    "Registrarse aquí"
-                                  ),
-                                ),
-                              ],
-                            ),
                           ],
                         ),
                       )

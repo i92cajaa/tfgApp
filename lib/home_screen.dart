@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tfg/api_connection/api_connection.dart';
 import 'package:http/http.dart' as http;
+import 'package:tfg/client_profile_screen.dart';
 import 'package:tfg/lessons_screen.dart';
 import 'package:tfg/login_screen.dart';
 import 'package:tfg/utils/base64_to_image.dart';
@@ -47,6 +48,13 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('Centros'),
         backgroundColor: Colors.purple,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.bookmark),
+            color: Colors.black,
+            onPressed: () async {
+              Get.to(ClientProfileScreen());
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             color: Colors.black,

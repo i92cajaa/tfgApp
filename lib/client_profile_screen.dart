@@ -1,34 +1,27 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 import 'package:tfg/api_connection/api_connection.dart';
+import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:tfg/home_screen.dart';
 
-class SchedulesScreen extends StatefulWidget {
+class ClientProfileScreen extends StatefulWidget {
   @override
-  State<SchedulesScreen> createState() => _SchedulesScreenState();
+  State<ClientProfileScreen> createState() => _ClientProfileScreenState();
 }
 
-class _SchedulesScreenState extends State<SchedulesScreen> {
+class _ClientProfileScreenState extends State<ClientProfileScreen> {
+
   var data = [];
   final storage = FlutterSecureStorage();
-  late final String lessonId = Get.arguments;
-  List<dynamic> bookedScheduleIds = [];
 
-  @override
-  void initState() {
-    super.initState();
-    _loadBookedScheduleIds();
-  }
-
-  Future<void> _loadBookedScheduleIds() async {
+  Future<List<List<Map<String, dynamic>>>> getBookings() async {
     final token = await storage.read(key: 'auth_token');
     final clientId = await storage.read(key: 'client_id');
 
-    final url = Uri.parse(API.getBookingsScheduleIdUrl(clientId!));
+    final url = Uri.parse(API.getBookingsUrl(clientId!));
     final response = await http.get(
       url,
       headers: {
@@ -38,39 +31,22 @@ class _SchedulesScreenState extends State<SchedulesScreen> {
     );
 
     if (response.statusCode == 200) {
-      setState(() {
-        bookedScheduleIds = jsonDecode(response.body);
-      });
-      print(bookedScheduleIds);
+      var data = jsonDecode(response.body);
+      return List<List<Map<String, dynamic>>>.from(
+        data.map((outer) => List<Map<String, dynamic>>.from(
+          outer.map((inner) => Map<String, dynamic>.from(inner)),
+        )),
+      );
     } else {
       throw Exception('Error ${response.statusCode}');
     }
   }
 
-  Future<List<Map<String, dynamic>>> getSchedules() async {
-    final token = await storage.read(key: 'auth_token');
-
-    final url = Uri.parse(API.getSchedulesUrl(lessonId));
-    final response = await http.get(
-      url,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      return List<Map<String, dynamic>>.from(jsonDecode(response.body));
-    } else {
-      throw Exception('Error ${response.statusCode}');
-    }
-  }
-
-  Future<void> book(String scheduleId) async {
+  Future<void> cancelBooking(String scheduleId) async {
     final token = await storage.read(key: 'auth_token');
     final clientId = await storage.read(key: 'client_id');
 
-    final url = Uri.parse(API.bookUrl(clientId!, scheduleId));
+    final url = Uri.parse(API.cancelBookingUrl(clientId!, scheduleId));
     final response = await http.get(
       url,
       headers: {
@@ -90,12 +66,14 @@ class _SchedulesScreenState extends State<SchedulesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
+
       appBar: AppBar(
-        title: const Text('Horarios disponibles'),
+        title: const Text('Mi perfil'),
         backgroundColor: Colors.purple,
       ),
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: getSchedules(),
+
+      body: FutureBuilder<List<List<Map<String, dynamic>>>>(
+        future: getBookings(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
@@ -105,12 +83,8 @@ class _SchedulesScreenState extends State<SchedulesScreen> {
             return Center(
               child: Text('Error: ${snapshot.error}'),
             );
-          } else if (snapshot.hasData && snapshot.data!.isEmpty) {
-            return Center(
-              child: Image.asset('images/empty_image.png'), // Imagen cuando no hay datos
-            );
           } else if (snapshot.hasData) {
-            List<Map<String, dynamic>> schedules = snapshot.data!;
+            List<List<Map<String, dynamic>>> bookings = snapshot.data!;
             return LayoutBuilder(
               builder: (context, constraints) {
                 return ConstrainedBox(
@@ -121,7 +95,31 @@ class _SchedulesScreenState extends State<SchedulesScreen> {
                     child: Column(
                       children: [
                         const SizedBox(height: 10.0),
-                        for (var i = 0; i < schedules.length; i++)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(8.0),
+                          margin: const EdgeInsets.symmetric(vertical: 4.0),
+                          child: Row(
+                            children: [
+                              Text(
+                                '${bookings[0][0]['name']}',
+                                style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(width: 10.0,),
+                              Text(
+                                'DNI: ${bookings[0][0]['dni']}',
+                                style: const TextStyle(color: Colors.white, fontSize: 18),
+                              )
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 10.0,),
+                        const Text(
+                          'Mis Reservas',
+                          style: TextStyle(color: Colors.white, fontSize: 20.0, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 5.0,),
+                        for (var i = 0; i < bookings[1].length; i++)
                           Column(
                             children: [
                               Container(
@@ -135,31 +133,32 @@ class _SchedulesScreenState extends State<SchedulesScreen> {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          'Día ${schedules[i]['day']}, de ${schedules[i]['date_from']} a ${schedules[i]['date_to']}',
-                                          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                                          'Clase ${bookings[1][i]['class']}',
+                                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                                          textAlign: TextAlign.start,
                                         ),
-                                        const SizedBox(height: 10.0),
                                         Text(
-                                          'Planta ${schedules[i]['room_floor']}, Habitación ${schedules[i]['room_number']}',
+                                          'Día ${bookings[1][i]['day']}, de ${bookings[1][i]['date_from']} a ${bookings[1][i]['date_to']}',
                                           style: const TextStyle(color: Colors.white, fontSize: 14),
+                                          textAlign: TextAlign.start,
+                                        ),
+                                        Text(
+                                          'Planta ${bookings[1][i]['room_floor']}, Habitación ${bookings[1][i]['room_number']}',
+                                          style: const TextStyle(color: Colors.white, fontSize: 14),
+                                          textAlign: TextAlign.start,
                                         ),
                                       ],
                                     ),
                                     const Spacer(),
-                                    if (bookedScheduleIds.contains(schedules[i]['id']))
-                                      const Icon(Icons.check, color: Colors.white, weight: 2.0,) // Show checkmark if booked
-                                    else
+                                    if (bookings[1][i]['done'] == 1)
                                       IconButton(
-                                        icon: const Icon(Icons.bookmark_add),
+                                        onPressed: () => cancelBooking(bookings[1][i]['schedule_id']),
+                                        icon: const Icon(Icons.cancel),
                                         color: Colors.white,
-                                        onPressed: () {
-                                          book(schedules[i]['id']);
-                                        },
                                       ),
                                   ],
                                 ),
                               ),
-
                               const SizedBox(height: 10.0),
                             ],
                           ),

@@ -1,5 +1,5 @@
 class API {
-  static const String hostConnect = "http://192.168.56.1/app";
+  static const String hostConnect = "http://192.168.1.173/app";
   static const String loginUrl = "$hostConnect/login";
   static const String getCentersUrl = "$hostConnect/all-centers";
   
@@ -15,7 +15,15 @@ class API {
     return "$hostConnect/book/$client/$schedule";
   }
 
+  static String getBookingsScheduleIdUrl(String client) {
+    return "$hostConnect/bookings-schedules-id-by-client/$client";
+  }
+
   static String getBookingsUrl(String client) {
     return "$hostConnect/bookings-by-client/$client";
+  }
+
+  static String cancelBookingUrl(String client, String schedule) {
+    return "$hostConnect/cancel-booking/$client/$schedule";
   }
 }
