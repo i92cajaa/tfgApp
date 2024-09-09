@@ -1,5 +1,5 @@
 class API {
-  static const String hostConnect = "http://192.168.1.173/app";
+  static const String hostConnect = "http://192.168.1.153/app";
   static const String loginUrl = "$hostConnect/login";
   static const String getCentersUrl = "$hostConnect/all-centers";
   
